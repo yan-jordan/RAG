@@ -1,0 +1,90 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .rag-wrapper { font-family: 'Vazir', 'Tahoma', sans-serif; padding: 25px; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; direction: rtl; text-align: right; }
+    .header-title { color: #1e293b; font-size: 22px; border-bottom: 2px solid #3b82f6; padding-bottom: 12px; margin-bottom: 25px; font-weight: bold; }
+    .form-group { margin-bottom: 20px; }
+    .form-label { font-weight: bold; color: #475569; display: block; margin-bottom: 8px; font-size: 14px; }
+    .text-input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; box-sizing: border-box; transition: border-color 0.2s; direction: rtl; }
+    .text-input:focus { border-color: #3b82f6; outline: none; }
+    .btn-action { background-color: #3b82f6; color: white; border: none; padding: 12px 24px; cursor: pointer; border-radius: 6px; font-size: 14px; font-weight: bold; transition: background-color 0.2s; }
+    .btn-action:hover { background-color: #2563eb; }
+    .answer-card { margin-top: 30px; padding: 20px; background: #f8fafc; border-right: 6px solid #10b981; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .answer-title { color: #0f172a; margin-top: 0; font-size: 16px; margin-bottom: 10px; font-weight: bold; }
+    .answer-body { font-size: 15px; line-height: 1.8; color: #334155; }
+    .context-accordion { margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 6px; border: 1px solid #e2e8f0; }
+    .context-title { font-weight: bold; color: #475569; font-size: 13px; margin-bottom: 8px; display: block; }
+    .context-pre { white-space: pre-wrap; font-size: 12px; color: #64748b; line-height: 1.6; max-height: 180px; overflow-y: auto; margin: 0; font-family: monospace; background: #f8fafc; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; direction: ltr; text-align: left; }
+    .history-table-container { margin-top: 40px; }
+    .history-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .history-table th, .history-table td { padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-size: 13px; }
+    .history-table th { background-color: #f8fafc; color: #475569; font-weight: bold; }
+    .history-table tr:hover { background-color: #f8fafc; }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a> &rsaquo;
+    <a href="/admin/app/document/">برنامه مدیریت اسناد</a> &rsaquo;
+    سامانه هوشمند پرسش و پاسخ
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="rag-wrapper">
+    <h1 class="header-title">💬 سامانه هوشمند پرسش و پاسخ مبتنی بر محتوای اسناد بارگذاری‌شده</h1>
+    
+    <form action="" method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="question" class="form-label">پرسش خود را در کادر زیر وارد نمایید:</label>
+            <input type="text" name="question" id="question" class="text-input" placeholder="مثال: تعهدات کارفرما در قرارداد پشتیبانی نرم‌افزار چیست؟" value="{{ question|default:'' }}">
+        </div>
+        <button type="submit" class="btn-action">🔍 استخراج پاسخ معنایی</button>
+    </form>
+
+    {% if answer %}
+    <div class="answer-card">
+        <h3 class="answer-title">✅ پاسخ هوشمند سیستم:</h3>
+        <div class="answer-body">{{ answer }}</div>
+    </div>
+    
+    <div class="context-accordion">
+        <span class="context-title">📄 اسناد مرجع و قطعات متنی بازیابی‌شده (Context):</span>
+        <pre class="context-pre">{{ retrieved_context }}</pre>
+    </div>
+    {% endif %}
+
+    <div class="history-table-container">
+        <h3 style="color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 10px; font-weight: bold;">📋 سابقه آخرین پرسش‌ها و پاسخ‌های سیستم</h3>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>پرسش مطرح‌شده</th>
+                    <th>پاسخ استخراج‌شده</th>
+                    <th>سند مرجع اصلی</th>
+                    <th>تاریخ ثبت</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in recent_histories %}
+                <tr>
+                    <td style="font-weight: 500;">{{ log.question }}</td>
+                    <td style="color: #475569;">{{ log.answer|truncatechars:120 }}</td>
+                    <td><span class="tag" style="background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 11px;">{{ log.document.title|default:"سند عمومی یا نامشخص" }}</span></td>
+                    <td style="color: #94a3b8; font-size: 12px;">{{ log.created_at|date:"Y-m-d H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">تاکنون هیچ پرسش و پاسخی در سامانه ثبت نشده است.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+django>=4.2,<5.0
+djangorestframework
+langchain
+langchain-community
+langchain-openai
+langchain-text-splitters
+faiss-cpu
+python-docx
+tiktoken

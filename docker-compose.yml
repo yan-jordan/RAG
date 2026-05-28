@@ -1,0 +1,23 @@
+# directory: docker-compose.yml
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/code
+      - django_media_storage:/code/media
+    environment:
+      - DJANGO_SETTINGS_MODULE=project.settings
+      - DEBUG=True
+      - SECRET_KEY="django-insecure-m#@*x!v_p+9r&_qy(b_sh-l7q1-k8_r7"
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    env_file:
+      - .env
+    restart: always
+
+volumes:
+  django_media_storage:
+
