@@ -196,7 +196,7 @@ This enables organizations and developers to create private document assistants,
 ## 1. Clone Repository
 
 ```bash
-git clone https://github.com/your-username/django-rag-engine.git
+git clone <REPO-URL>
 
 cd django-rag-engine
 ```
@@ -372,27 +372,6 @@ http://localhost:8000/api/ask/ \
 
 ---
 
-# ⚙️ Configuration
-
-## Change Language
-
-In `settings.py`:
-
-```python
-LANGUAGE_CODE = "fa-ir"
-```
-
-Examples:
-
-```python
-LANGUAGE_CODE = "en-us"
-```
-
-```python
-LANGUAGE_CODE = "de-de"
-```
-
----
 
 ## Change LLM Model
 
@@ -548,50 +527,9 @@ python manage.py collectstatic
 
 # 📸 Screenshots
 
-## Admin Dashboard
 
-```text
-Add screenshot here
-```
+<img width="2556" height="1318" alt="Screenshot 1405-03-10 at 12 58 52" src="https://github.com/user-attachments/assets/67d19625-c8ab-4774-8dde-e0f45cd70fcd" />
 
-## Document Upload
-
-```text
-Add screenshot here
-```
-
-## Ask Document Engine
-
-```text
-Add screenshot here
-```
-
----
-
-# 🤝 Contributing
-
-Contributions are welcome.
-
-1. Fork the repository
-2. Create a feature branch
-
-```bash
-git checkout -b feature/my-feature
-```
-
-3. Commit changes
-
-```bash
-git commit -m "Add new feature"
-```
-
-4. Push branch
-
-```bash
-git push origin feature/my-feature
-```
-
-5. Open a Pull Request
 
 ---
 
