@@ -1,29 +1,16 @@
-# directory: Dockerfile
 FROM python:3.11-slim
 
-# ممانعت از ایجاد فایل‌های کش کامپایل پایتون (.pyc) در کانتینر
-ENV PYTHONDONTWRITEBYTECODE=1
-# ممانعت از ذخیره‌سازی بافر خروجی‌های لاگ پایتون برای پایش آنی لاگ‌ها
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /code
 
-# نصب ملزومات سیستمی توزیع دبیان برای اجرای روان کتابخانه‌های بهینه‌سازی
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-# کپی فایل نیازمندی‌ها و نصب لایه‌های پکیج‌های پایتون
-COPY requirements.txt /code/
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+COPY . .
 
-# 🛑 اصلاح این خط (افزودن فاصله بین کلمه COPY، نقطه و مسیر مقصد)
-COPY . /code/
-
-# باز کردن پورت اصلی وب‌سایت جنگو
 EXPOSE 8000
 
-# اعمال مایگریشن‌ها و راه‌اندازی وب‌سرور جنگو بر روی پورت مشخص
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+# One worker + threads: the FAISS index is cached per process, so extra workers would each re-embed.
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn project.wsgi:application --bind 0.0.0.0:8000 --workers 1 --threads 8 --timeout 180"]

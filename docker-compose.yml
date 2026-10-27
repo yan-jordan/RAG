@@ -1,23 +1,30 @@
-# directory: docker-compose.yml
-version: '3.8'
-
 services:
-  web:
+  api:
     build: .
     ports:
       - "8000:8000"
-    volumes:
-      - .:/code
-      - django_media_storage:/code/media
-    environment:
-      - DJANGO_SETTINGS_MODULE=project.settings
-      - DEBUG=True
-      - SECRET_KEY="django-insecure-m#@*x!v_p+9r&_qy(b_sh-l7q1-k8_r7"
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     env_file:
-      - .env
-    restart: always
+      - path: .env
+        required: false
+    environment:
+      DATABASE_PATH: /data/db.sqlite3
+      MEDIA_ROOT: /data/media
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+    volumes:
+      - rag_data:/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # baked into the browser bundle – must be reachable from the user's browser
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
 
 volumes:
-  django_media_storage:
-
+  rag_data:

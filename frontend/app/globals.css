@@ -1,0 +1,114 @@
+@import "tailwindcss";
+@import "@fontsource-variable/vazirmatn";
+
+/* ── Tokens ──────────────────────────────────────────────────────────
+   blue  = things you can act on
+   yellow = evidence taken from your own documents                    */
+:root {
+  --paper: #f3f4f9;
+  --surface: #ffffff;
+  --ink: #12142b;
+  --muted: #646a8a;
+  --line: #e1e3f0;
+  --accent: #2b3af5;
+  --on-accent: #ffffff;
+  --marker: #ffe14d;
+  --danger: #d6334a;
+  --ok: #12805c;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --paper: #0b0d1c;
+  --surface: #121530;
+  --ink: #edefff;
+  --muted: #8e94bc;
+  --line: #242850;
+  --accent: #8591ff;
+  --on-accent: #0b0d1c;
+  --marker: rgba(255, 225, 77, 0.3);
+  --danger: #ff6b81;
+  --ok: #4fd1a1;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --font-sans: "Vazirmatn Variable", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    background: var(--paper);
+    color: var(--ink);
+  }
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: var(--marker);
+    color: var(--ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+/* ── The one memorable thing: a highlighter pen for evidence ───────── */
+.marker {
+  background-image: linear-gradient(transparent 14%, var(--marker) 14% 94%, transparent 94%);
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 100% 100%;
+  padding-inline: 0.2em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  animation: sweep 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes sweep {
+  from { background-size: 0% 100%; }
+  to   { background-size: 100% 100%; }
+}
+
+/* answer typography (Markdown) */
+.answer { line-height: 2.05; font-size: 1.0625rem; max-width: 62ch; }
+.answer > * + * { margin-top: 0.9em; }
+.answer ul, .answer ol { padding-inline-start: 1.4em; }
+.answer ul { list-style: disc; }
+.answer ol { list-style: decimal; }
+.answer li + li { margin-top: 0.35em; }
+.answer strong { font-weight: 700; }
+.answer h1, .answer h2, .answer h3 { font-weight: 700; font-size: 1.125rem; margin-top: 1.4em; }
+.answer code { font-size: 0.9em; background: var(--line); padding: 0.1em 0.4em; border-radius: 6px; }
+
+/* skeleton shimmer while the model is thinking */
+.thinking-line {
+  height: 0.8rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--line) 0 30%, var(--marker) 50%, var(--line) 70% 100%);
+  background-size: 300% 100%;
+  animation: think 1.6s ease-in-out infinite;
+}
+@keyframes think {
+  from { background-position: 100% 0; }
+  to   { background-position: 0% 0; }
+}
+
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marker, .thinking-line { animation: none; }
+  * { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+}

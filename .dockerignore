@@ -1,0 +1,9 @@
+.git
+.env
+db.sqlite3
+media
+frontend
+docs
+samples
+**/__pycache__
+.venv

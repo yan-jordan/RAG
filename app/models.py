@@ -1,79 +1,87 @@
-# directory: app/models.py
-from django.db import models
 from django.core.validators import FileExtensionValidator
-import os
+from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+
+from .documents import DocumentExtractionError, extract_docx_text
+
 
 class Document(models.Model):
-    """
-    مدل اصلی ذخیره‌سازی اطلاعات اسناد سازمانی و متون استخراج‌شده از آن‌ها.
-    """
+    """An uploaded Word file and the text extracted from it."""
+
+    class Status(models.TextChoices):
+        READY = "ready", "آماده"
+        FAILED = "failed", "ناموفق"
+
     title = models.CharField(max_length=255, verbose_name="عنوان سند")
     file = models.FileField(
-        upload_to="documents/", 
-        validators=[FileExtensionValidator(allowed_extensions=['docx'])],
-        verbose_name="فایل سند (فقط DOCX)"
+        upload_to="documents/",
+        validators=[FileExtensionValidator(allowed_extensions=["docx"])],
+        verbose_name="فایل سند (فقط DOCX)",
     )
     uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="زمان بارگذاری")
     full_text = models.TextField(blank=True, verbose_name="متن کامل استخراج‌شده")
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.READY, verbose_name="وضعیت"
+    )
+    error_message = models.CharField(max_length=255, blank=True, verbose_name="پیام خطا")
 
     class Meta:
         verbose_name = "سند متنی"
         verbose_name_plural = "اسناد متنی"
-        ordering = ['-uploaded_at']
+        ordering = ["-uploaded_at"]
 
     def __str__(self):
         return self.title
 
     def save(self, *args, **kwargs):
-        """
-        بازنویسی متد ذخیره‌سازی به منظور استخراج خودکار متون بلافاصله پس از بارگذاری فایل.
-        """
-        is_new = self.pk is None
+        should_extract = (
+            bool(self.file)
+            and not kwargs.get("update_fields")
+            and (self._state.adding or not self.full_text)
+        )
         super().save(*args, **kwargs)
-        
-        # فرآیند استخراج متن در صورت وجود فایل جدید یا خالی بودن فیلد متن کامل
-        if self.file and (is_new or not self.full_text):
-            self.extract_document_text()
+        if should_extract:
+            self.extract_text()
 
-    def extract_document_text(self):
-        """
-        استخراج متن از فایل ورد به کمک کتابخانه python-docx با ایجاد مکانیسم دفاعی در برابر خطاهای سیستمی.
-        """
-        from docx import Document as DocxReader
+    def extract_text(self):
+        """Fill ``full_text`` / ``status``. A failure never pollutes ``full_text``."""
         try:
-            doc_path = self.file.path
-            doc = DocxReader(doc_path)
-            paragraphs = [para.text for para in doc.paragraphs if para.text.strip()]
-            self.full_text = "\n\n".join(paragraphs)
-            # بروزرسانی اختصاصی فیلد متنی بدون فعال‌سازی مجدد زنجیره ذخیره‌سازی سیگنال‌ها
-            Document.objects.filter(pk=self.pk).update(full_text=self.full_text)
-        except Exception as e:
-            # ذخیره گزارش خطا در فیلد متنی در صورت بروز نقص فنی در فرآیند پارس فایل
-            self.full_text = f"خطای فنی در پردازش و استخراج محتوای فایل ورد رخ داده است: {str(e)}"
-            Document.objects.filter(pk=self.pk).update(full_text=self.full_text)
+            self.full_text = extract_docx_text(self.file.path)
+            self.status, self.error_message = self.Status.READY, ""
+        except DocumentExtractionError as exc:
+            self.full_text, self.status, self.error_message = "", self.Status.FAILED, str(exc)
+        self.save(update_fields=["full_text", "status", "error_message"])
+
+
+@receiver(post_delete, sender=Document)
+def delete_document_file(sender, instance, **kwargs):
+    """Don't leave orphaned .docx files on disk."""
+    if instance.file:
+        instance.file.delete(save=False)
 
 
 class QAHistory(models.Model):
-    """
-    مدل ذخیره‌سازی تاریخچه کامل پرسش‌ها، پاسخ‌های هوشمند و جزئیات بافتار بازیابی‌شده.
-    """
+    """A question, its answer and the passages the answer was grounded on."""
+
     document = models.ForeignKey(
-        Document, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
-        related_name="qa_histories", 
-        verbose_name="سند مرجع اصلی"
+        Document,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="qa_histories",
+        verbose_name="سند مرجع اصلی",
     )
     question = models.TextField(verbose_name="پرسش کاربر")
     answer = models.TextField(verbose_name="پاسخ تولید شده")
-    retrieved_context = models.TextField(blank=True, verbose_name="بافتار بازیابی‌شده از سند برداری")
+    retrieved_context = models.TextField(blank=True, verbose_name="بافتار بازیابی‌شده")
+    sources = models.JSONField(default=list, blank=True, verbose_name="منابع")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ و زمان ثبت")
 
     class Meta:
         verbose_name = "تاریخچه پرسش و پاسخ"
         verbose_name_plural = "تاریخچه پرسش‌ها و پاسخ‌ها"
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"پرسش: {self.question[:40]}..."

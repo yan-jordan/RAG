@@ -1,1 +1,21 @@
+# secrets
 .env
+
+# data
+db*.sqlite3
+media/
+staticfiles/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# frontend
+node_modules/
+.next/
+frontend/out/
+
+# os
+.DS_Store
